@@ -1,0 +1,20 @@
+WITH shop_rev_tab AS
+     (SELECT shop_id, city, SUM(revenue) as shop_revenue
+      FROM revenue_data
+      GROUP BY shop_id),
+     city_rev_tab AS
+     (SELECT city, SUM(revenue) as city_revenue
+      FROM revenue_data
+      GROUP BY city)
+      
+SELECT city, shop_id, ROUND(shop_revenue * 100.0 / city_revenue, 0) AS city_revenue_share
+FROM
+
+(SELECT shop_id, shop_rev_tab.city, shop_revenue, city_revenue, 
+        RANK() OVER (PARTITION BY shop_rev_tab.city ORDER BY shop_revenue DESC) AS shop_rank_in_city
+FROM shop_rev_tab JOIN city_rev_tab ON shop_rev_tab.city = city_rev_tab.city
+WHERE shop_revenue >= 120
+ORDER BY shop_revenue DESC) AS final_tab
+
+WHERE shop_rank_in_city IN (1,2,3)
+ORDER BY city ASC, city_revenue_share DESC, shop_id ASC;
